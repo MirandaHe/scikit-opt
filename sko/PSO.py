@@ -95,6 +95,9 @@ class PSO(SkoBase):
         self.verbose = verbose  # print the result of each iter or not
 
         self.lb, self.ub = np.array(lb) * np.ones(self.n_dim), np.array(ub) * np.ones(self.n_dim)
+        '''
+        self.lb = [0, -1, 0.5]
+        '''
         assert self.n_dim == len(self.lb) == len(self.ub), 'dim == len(lb) == len(ub) is not True'
         assert np.all(self.ub > self.lb), 'upper-bound must be greater than lower-bound'
 
@@ -105,9 +108,12 @@ class PSO(SkoBase):
         self.X = np.random.uniform(low=self.lb, high=self.ub, size=(self.pop, self.n_dim))
         v_high = self.ub - self.lb
         self.V = np.random.uniform(low=-v_high, high=v_high, size=(self.pop, self.n_dim))  # speed of particles
+        # self.Y就是适应度函数值
         self.Y = self.cal_y()  # y = f(x) for all particles
+        # ？ 为什么要把Y转成1列呢？
         self.pbest_x = self.X.copy()  # personal best location of every particle in history
         self.pbest_y = np.array([[np.inf]] * pop)  # best image of every particle in history
+        # x.mean(axis=0)取纵轴上的平均值,初始化一个最佳位置 [[xxxx,xxx,xxxxx]]
         self.gbest_x = self.pbest_x.mean(axis=0).reshape(1, -1)  # global best location for all particles
         self.gbest_y = np.inf  # global best y for all particles
         self.gbest_y_hist = []  # gbest_y of every iteration
@@ -134,10 +140,12 @@ class PSO(SkoBase):
 
     def update_X(self):
         self.X = self.X + self.V
+        # 将self.X中的值修建到self.lb和self.ub之间，小的补大，大的缩小
         self.X = np.clip(self.X, self.lb, self.ub)
 
     def cal_y(self):
         # calculate y for every x in X
+        # .reshape(-1,1)：-1表示自动计算，1表示列固定为一列,计算适应度
         self.Y = self.func(self.X).reshape(-1, 1)
         return self.Y
 
@@ -191,6 +199,7 @@ class PSO(SkoBase):
                 tor_iter = np.amax(self.pbest_y) - np.amin(self.pbest_y)
                 if tor_iter < precision:
                     c = c + 1
+                    # 如果精度差小于规定数字连续达到N次，则结束循环
                     if c > N:
                         break
                 else:
